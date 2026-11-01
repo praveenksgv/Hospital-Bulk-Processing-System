@@ -1,0 +1,15 @@
+name: Container checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test in Python 3.8 Docker
+        run: docker compose --profile test run --build --rm tests
+      - name: Build production image
+        run: docker build --target runtime -t hospital-bulk:ci .

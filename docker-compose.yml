@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    ports:
+      - "${HOST_PORT:-8000}:8000"
+    environment:
+      PORT: "8000"
+      UPSTREAM_BASE_URL: "${UPSTREAM_BASE_URL:-https://hospital-directory.onrender.com}"
+    env_file:
+      - path: .env
+        required: false
+    stop_grace_period: 70s
+  tests:
+    profiles: [test]
+    build:
+      context: .
+      target: test
+    environment:
+      UPSTREAM_BASE_URL: "http://test-directory.invalid"

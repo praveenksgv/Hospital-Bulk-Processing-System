@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: hospital-bulk-processing
+    runtime: docker
+    plan: free
+    numInstances: 1
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: UPSTREAM_BASE_URL
+        value: https://hospital-directory.onrender.com
