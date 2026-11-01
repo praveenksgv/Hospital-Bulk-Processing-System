@@ -31,3 +31,6 @@ uploads/
 # Operating-system files
 .DS_Store
 Thumbs.db
+
+# Local implementation plan
+/plan.md
