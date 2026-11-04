@@ -6,6 +6,7 @@ services:
     numInstances: 1
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
+    maxShutdownDelaySeconds: 75
     autoDeployTrigger: checksPass
     envVars:
       - key: UPSTREAM_BASE_URL
