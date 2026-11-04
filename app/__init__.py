@@ -1,0 +1,1 @@
+"""Hospital bulk processing service."""
