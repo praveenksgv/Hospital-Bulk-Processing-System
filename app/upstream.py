@@ -91,59 +91,58 @@ class DirectoryClient:
                 if on_send:
                     on_send(True)
                 
-                request_time = time.monotonic();
+                request_time = time.monotonic()
 
                 try:
                     async with self.http.stream(method, path, json=payload) as response:
-                    if response.status_code == 404 and method == "GET":
-                        return []
-                    if response.status_code == 429:
-                        if on_send:
-                            on_send(False)
-                        raise UpstreamError(
-                            "upstream_rate_limited",
-                            "The directory API rejected the request due to rate limiting.",
-                            retryable=True,
-                            retry_after=retry_after_seconds(response.headers.get("Retry-After")),
-                        )
-                    if not 200 <= response.status_code < 300:
-                        uncertain = method != "GET" and (
-                            response.status_code >= 500
-                            or response.status_code == 408
-                            or 300 <= response.status_code < 400
-                        )
-                        if on_send and not uncertain:
-                            on_send(False)
-                        raise UpstreamError(
-                            "upstream_http_error",
-                            "The directory API returned HTTP {}.".format(response.status_code),
-                            retryable=method == "GET"
-                            and (response.status_code >= 500 or response.status_code == 408),
-                            uncertain=uncertain,
-                        )
-                    chunks, size = [], 0
-                    async for chunk in response.aiter_bytes():
-                        size += len(chunk)
-                        if size > self.settings.max_response_bytes:
+                        if response.status_code == 404 and method == "GET":
+                            return []
+                        if response.status_code == 429:
+                            if on_send:
+                                on_send(False)
                             raise UpstreamError(
-                                "upstream_response_too_large",
-                                "The directory response exceeded the configured size limit.",
-                                uncertain=method != "GET",
+                                "upstream_rate_limited",
+                                "The directory API rejected the request due to rate limiting.",
+                                retryable=True,
+                                retry_after=retry_after_seconds(response.headers.get("Retry-After")),
                             )
-                        chunks.append(chunk)
-                    if method == "PATCH":
-                        # Activation's response schema is unspecified; verify via GET.
-                        return None
-                    try:
-                        return json.loads(b"".join(chunks))
-                    except (ValueError, UnicodeDecodeError) as exc:
-                        raise UpstreamError(
-                            "invalid_upstream_response",
-                            "The directory API returned invalid JSON.",
-                            uncertain=method != "GET",
-                        ) from exc
+                        if not 200 <= response.status_code < 300:
+                            uncertain = method != "GET" and (
+                                response.status_code >= 500
+                                or response.status_code == 408
+                                or 300 <= response.status_code < 400
+                            )
+                            if on_send and not uncertain:
+                                on_send(False)
+                            raise UpstreamError(
+                                "upstream_http_error",
+                                "The directory API returned HTTP {}.".format(response.status_code),
+                                retryable=method == "GET"
+                                and (response.status_code >= 500 or response.status_code == 408),
+                                uncertain=uncertain,
+                            )
+                        chunks, size = [], 0
+                        async for chunk in response.aiter_bytes():
+                            size += len(chunk)
+                            if size > self.settings.max_response_bytes:
+                                raise UpstreamError(
+                                    "upstream_response_too_large",
+                                    "The directory response exceeded the configured size limit.",
+                                    uncertain=method != "GET",
+                                )
+                            chunks.append(chunk)
+                        if method == "PATCH":
+                            # Activation's response schema is unspecified; verify via GET.
+                            return None
+                        try:
+                            return json.loads(b"".join(chunks))
+                        except (ValueError, UnicodeDecodeError) as exc:
+                            raise UpstreamError(
+                                "invalid_upstream_response",
+                                "The directory API returned invalid JSON.",
+                                uncertain=method != "GET",
+                            ) from exc
                 finally:
-
                     logger.info(
                         "HTTP % took %.2f second",
                         method, 
