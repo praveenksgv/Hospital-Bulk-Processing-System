@@ -76,11 +76,25 @@ class DirectoryClient:
 
         async def perform():
             nonlocal sent
+
+            wait_start = time.monotonic()
+
+
             async with self.semaphore:
+                logger.info(
+                    "Semaphore wait: %.2f seconds",
+                    time.monotonic() - wait_start
+                )
+
+
                 sent = True
                 if on_send:
                     on_send(True)
-                async with self.http.stream(method, path, json=payload) as response:
+                
+                request_time = time.monotonic();
+
+                try:
+                    async with self.http.stream(method, path, json=payload) as response:
                     if response.status_code == 404 and method == "GET":
                         return []
                     if response.status_code == 429:
@@ -128,6 +142,14 @@ class DirectoryClient:
                             "The directory API returned invalid JSON.",
                             uncertain=method != "GET",
                         ) from exc
+                finally:
+
+                    logger.info(
+                        "HTTP % took %.2f second",
+                        method, 
+                        path, 
+                        time.monotonic() - request_start
+                    )
 
         try:
             return await asyncio.wait_for(perform(), self.settings.request_timeout_seconds)
@@ -155,6 +177,8 @@ class DirectoryClient:
                 retryable=method == "GET" or not sent,
                 uncertain=method != "GET" and sent,
             ) from exc
+
+        
 
     async def request(
         self,
