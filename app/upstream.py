@@ -91,7 +91,7 @@ class DirectoryClient:
                 if on_send:
                     on_send(True)
                 
-                request_time = time.monotonic()
+                request_start = time.monotonic()
 
                 try:
                     async with self.http.stream(method, path, json=payload) as response:
